@@ -1,5 +1,98 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
+﻿@model EmployeeViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Menu -->
+        <div class="col-md-2">
+            <ul class="list-group">
+                <li class="list-group-item"><a href="#">Home</a></li>
+                <li class="list-group-item"><a href="@Url.Action("Index", "Employee")">Employees</a></li>
+                <li class="list-group-item"><a href="@Url.Action("AddEmployee", "Employee")">Add Employee</a></li>
+            </ul>
+        </div>
+
+        <!-- Employee List -->
+        <div class="col-md-10">
+            <h2>Employee List</h2>
+
+            <!-- Search and Filter -->
+            <form method="get" action="@Url.Action("Index")" class="form-inline">
+                <div class="form-group">
+                    <input type="text" name="searchName" class="form-control" placeholder="Name" value="@Model.SearchQuery" />
+                </div>
+                <div class="form-group">
+                    <input type="text" name="searchEmail" class="form-control" placeholder="Email" value="@Model.SearchQuery" />
+                </div>
+                <div class="form-group">
+                    <input type="text" name="searchMobile" class="form-control" placeholder="Mobile" value="@Model.SearchQuery" />
+                </div>
+                <div class="form-group">
+                    <input type="text" name="searchDOB" class="form-control datepicker" placeholder="Date of Birth" />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-search"></i>
+                </button>
+            </form>
+
+            <!-- Employee Table -->
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Photo</th>
+                        <th><a href="?sortColumn=Name">Full Name</a></th>
+                        <th><a href="?sortColumn=Email">Email</a></th>
+                        <th><a href="?sortColumn=Mobile">Mobile</a></th>
+                        <th><a href="?sortColumn=DateOfBirth">Date of Birth</a></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var employee in Model.Employees)
+                    {
+                        <tr>
+                            <td><img src="@employee.PhotoPath" alt="Employee Photo" width="50" height="50" /></td>
+                            <td>@employee.FirstName @employee.LastName</td>
+                            <td>@employee.Email</td>
+                            <td>@employee.Mobile</td>
+                            <td>@employee.DateOfBirth.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <a href="@Url.Action("EditEmployee", new { id = employee.EmployeeId })" class="btn btn-warning">
+                                    <i class="fa fa-pencil"></i>
+                                </a>
+                                <button onclick="confirmDelete(@employee.EmployeeId)" class="btn btn-danger">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="text-center">
+                Showing @Model.Employees.Count() out of @Model.TotalRecords
+                <ul class="pagination">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="@((i == Model.CurrentPage) ? "active" : "")">
+                            <a href="@Url.Action("Index", new { page = i, searchQuery = Model.SearchQuery })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function confirmDelete(employeeId) {
+        if (confirm("Are you sure, you want to delete this?")) {
+            $.post('@Url.Action("DeleteEmployee")', { id: employeeId }, function (result) {
+                window.location.reload();
+            });
+        }
+    }
+
+    // Initialize datepicker
+    $('.datepicker').datepicker({ format: 'yyyy-mm-dd' });
+</script>
