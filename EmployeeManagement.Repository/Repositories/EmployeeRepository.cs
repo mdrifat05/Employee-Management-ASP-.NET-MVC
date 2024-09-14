@@ -1,6 +1,7 @@
 ﻿using EmployeeManagement.Repository.Contracts;
 using EmployeeManagement.Repository.DatabaseContext;
 using EmployeeManagement.Repository.Entities;
+using EmployeeManagement.Service.Dtos;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeManagement.Repository.Repositories;
@@ -19,9 +20,63 @@ public class EmployeeRepository : IEmpolyeeRepository
         return await _DbContext.SaveChangesAsync(cancellationToken) > 0;
     }
 
-    public async Task<IReadOnlyList<Employee>> Get(CancellationToken cancellationToken)
+
+    public async Task<int> GetTotalRecords(EmployeeSearchFilterModel searchModel, CancellationToken cancellationToken)
     {
-        return await _DbContext.Employees.ToListAsync(cancellationToken);
+        var query = _DbContext.Employees.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchModel.SearchName))
+        {
+            query = query.Where(e => e.FirstName.Contains(searchModel.SearchName) || e.LastName.Contains(searchModel.SearchName));
+        }
+
+        if (!string.IsNullOrEmpty(searchModel.SearchEmail))
+        {
+            query = query.Where(e => e.Email.Contains(searchModel.SearchEmail));
+        }
+
+        if (!string.IsNullOrEmpty(searchModel.SearchMobile))
+        {
+            query = query.Where(e => e.PhoneNumber.Contains(searchModel.SearchMobile));
+        }
+
+        if (searchModel.SearchDOB.HasValue)
+        {
+            query = query.Where(e => e.DateOfBirth == searchModel.SearchDOB.Value);
+        }
+
+        return await query.CountAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Employee>> Get(EmployeeSearchFilterModel? searchModel, CancellationToken cancellationToken)
+    {
+        var query = _DbContext.Employees.AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchModel.SearchName))
+        {
+            query = query.Where(e => e.FirstName.Contains(searchModel.SearchName) || e.LastName.Contains(searchModel.SearchName));
+        }
+
+        if (!string.IsNullOrEmpty(searchModel.SearchEmail))
+        {
+            query = query.Where(e => e.Email.Contains(searchModel.SearchEmail));
+        }
+
+        if (!string.IsNullOrEmpty(searchModel.SearchMobile))
+        {
+            query = query.Where(e => e.PhoneNumber.Contains(searchModel.SearchMobile));
+        }
+
+        if (searchModel.SearchDOB.HasValue)
+        {
+            query = query.Where(e => e.DateOfBirth == searchModel.SearchDOB.Value);
+        }
+
+        return await query
+            .Skip((searchModel.CurrentPage - 1) * searchModel.PageSize)
+            .Take(searchModel.PageSize)
+            .ToListAsync(cancellationToken);
+        //return await _DbContext.Employees.ToListAsync(cancellationToken);
     }
 
     public async Task<Employee?> Get(int? id, CancellationToken cancellationToken)
@@ -36,11 +91,7 @@ public class EmployeeRepository : IEmpolyeeRepository
 
     public async Task<bool> Update(Employee employee, CancellationToken cancellationToken)
     {
-        var existingEmployee = await Get(employee.Id, cancellationToken);
-        if (existingEmployee != null)
-        {
-            _DbContext.Entry(employee).State = EntityState.Modified;
-        }
+        _DbContext.Entry(employee).State = EntityState.Modified;
         return await _DbContext.SaveChangesAsync(cancellationToken) > 0;
     }
 

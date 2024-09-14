@@ -14,9 +14,9 @@ namespace EmployeeManagement.Web.Controllers
         }
 
         // GET: Employee
-        public async Task<IActionResult> Index(CancellationToken cancellationToken)
+        public async Task<IActionResult> Index(EmployeeSearchFilterModel employeeSearchFilterDto, CancellationToken cancellationToken)
         {
-            var employees = await _employeeService.Get(cancellationToken);
+            var employees = await _employeeService.Get(employeeSearchFilterDto, cancellationToken);
             return View(employees);
         }
 
@@ -54,25 +54,37 @@ namespace EmployeeManagement.Web.Controllers
         }
 
         // GET: Employee/Edit/5
-        public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit(int? id, CancellationToken cancellationToken)
         {
             var employee = await _employeeService.Get(id, cancellationToken);
             if (employee == null)
             {
                 return NotFound();
             }
-            return View(employee);
+            var updateEmployeeDto = new UpdateEmployeeDto
+            {
+                Id = employee.Id,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Email = employee.Email,
+                PhoneNumber = employee.PhoneNumber,
+                DateOfBirth = employee.DateOfBirth,
+                PhotoPath = employee.PhotoPath,
+            };
+
+            return View(updateEmployeeDto);
         }
 
         // POST: Employee/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, UpdateEmployeeDto updateEmployeeDto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Edit(UpdateEmployeeDto updateEmployeeDto, CancellationToken cancellationToken)
         {
-            if (id != updateEmployeeDto.Id)
+            if (updateEmployeeDto.Id <= 0)
             {
                 return BadRequest();
             }
+
 
             if (ModelState.IsValid)
             {
@@ -88,26 +100,13 @@ namespace EmployeeManagement.Web.Controllers
         // GET: Employee/Delete/5
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var employee = await _employeeService.Get(id, cancellationToken);
-            if (employee == null)
+            var employee = await _employeeService.Delete(id, cancellationToken);
+            if (!employee)
             {
                 return NotFound();
             }
 
-            return View(employee);
-        }
-
-        // POST: Employee/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken cancellationToken)
-        {
-            bool result = await _employeeService.Delete(id, cancellationToken);
-            if (result)
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            return View();
+            return RedirectToAction(nameof(Index));
         }
     }
 }
